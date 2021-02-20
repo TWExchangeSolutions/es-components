@@ -43,7 +43,11 @@ const setupStyleTag = node =>
 
 const applyStyles = async rootNode => {
   try {
-    setupStyleTag(rootNode);
+    // these font tags must exist at the document level
+    setupStyleTag(document.body);
+
+    // if we're in a Web Component, add styles to the shadow root
+    if (rootNode !== document.body) setupStyleTag(rootNode);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Failed to load icon styles', err);
