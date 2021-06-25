@@ -29,7 +29,7 @@ const getModalMargin = (windowHeight, modalHeight) => {
 
 const ModalStyles = createGlobalStyle`
   .${({ theme }) => theme.portalClassName} {
-    .background-overlay {
+    .${({ theme }) => theme.backdropClassName} {
       bottom: 0;
       background-color: ${props => {
         const color = tinycolor(props.theme.colors.gray9);
@@ -66,7 +66,7 @@ const ModalStyles = createGlobalStyle`
       }
     }
 
-    .modal-content {
+    .${({ theme }) => theme.contentClassName} {
       background-clip: padding-box;
       background-color: ${props => props.theme.colors.white};
       border-radius: 3px;
@@ -158,7 +158,7 @@ function Modal({
   ...other
 }) {
   const ariaId = useUniqueId(other.id);
-  const portalClassName = `ReactModalPortal-${useUniqueId()}`;
+  const modalId = useUniqueId();
   const [rootNode, RootNodeLocator] = useRootNodeLocator(document.body);
   const [modalHeight, setModalHeight] = useState(300);
   const [shouldShow, setShouldShow] = useState(show);
@@ -197,6 +197,10 @@ function Modal({
   const modalParentSelector =
     parentSelector || useCallback(() => rootNode, [rootNode]);
 
+  const portalClassName = `ReactModalPortal-${modalId}`;
+  const backdropClassName = `background-overlay-${modalId}`;
+  const contentClassName = `modal-content-${modalId}`;
+
   useEffect(() => {
     if (!animation || show) {
       setShouldShow(show);
@@ -232,7 +236,15 @@ function Modal({
   const shouldCloseOnOverlayClick = backdrop !== 'static' && backdrop;
 
   return (
-    <ThemeProvider theme={{ modalHeight, windowHeight, portalClassName }}>
+    <ThemeProvider
+      theme={{
+        modalHeight,
+        windowHeight,
+        portalClassName,
+        backdropClassName,
+        contentClassName
+      }}
+    >
       <RootNodeLocator />
       {shouldShow ? (
         <ModalStyles showAnimation={animation} showBackdrop={backdrop} />
@@ -240,8 +252,9 @@ function Modal({
       <ModalContext.Provider value={{ onHide, ariaId }}>
         <ReactModal
           portalClassName={portalClassName}
-          className={`${className} ${size} modal-content`}
-          overlayClassName="background-overlay"
+          className={`${className || ''} ${size} ${contentClassName}`}
+          overlayClassName={`${other.backdropClassName ||
+            ''} ${backdropClassName}`}
           closeTimeoutMS={animation ? animationTimeMs : null}
           isOpen={show}
           aria={{
@@ -294,11 +307,16 @@ Modal.propTypes = {
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   /** Selects the parent */
   parentSelector: PropTypes.func,
+  /** Classes for the Modal content */
   className: PropTypes.string,
+  /** Classes for the Modal backdrop */
+  backdropClassName: PropTypes.string,
+  /** A ref to the overlay */
   overlayRef: PropTypes.oneOfType([
     PropTypes.func,
     PropTypes.shape({ current: PropTypes.any })
   ]),
+  /** A ref to the content */
   contentRef: PropTypes.oneOfType([
     PropTypes.func,
     PropTypes.shape({ current: PropTypes.any })
@@ -318,7 +336,8 @@ Modal.defaultProps = {
   parentSelector: null,
   className: null,
   overlayRef: null,
-  contentRef: null
+  contentRef: null,
+  backdropClassName: undefined
 };
 
 Modal.Header = Header;
